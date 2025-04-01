@@ -11,6 +11,7 @@ import { getCommandName } from '../../util/pkg-name';
 import param from '../../util/output/param';
 import { OUTPUT_DIR } from '../../util/build/write-build-result';
 import { pullEnvRecords } from '../../util/env/get-env-records';
+import { refreshOidcToken } from '../../util/env/refresh-oidc-token';
 import output from '../../output-manager';
 
 type Options = {
@@ -84,8 +85,15 @@ export default async function dev(
     repoRoot,
   });
 
+  const stopRefreshOidcToken = link.project
+    ? refreshOidcToken(client, link.project.id, envValues)
+    : () => {};
+
   // listen to SIGTERM for graceful shutdown
-  process.on('SIGTERM', () => devServer.stop());
+  process.on('SIGTERM', () => {
+    stopRefreshOidcToken();
+    devServer.stop();
+  });
 
   // If there is no Development Command, we must delete the
   // v3 Build Output because it will incorrectly be detected by
